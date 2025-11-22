@@ -19,6 +19,7 @@ export interface IpLocationResult {
   timezone?: string;
   offset?: number;
   currency?: string;
+  language?: string;
   isp?: string;
   org?: string;
   as?: string;
@@ -27,6 +28,37 @@ export interface IpLocationResult {
   proxy?: boolean;
   hosting?: boolean;
 }
+
+// Map country codes to primary languages
+const countryLanguageMap: Record<string, string> = {
+  US: 'English', GB: 'English', CA: 'English/French', AU: 'English', NZ: 'English', IE: 'English',
+  ES: 'Spanish', MX: 'Spanish', AR: 'Spanish', CO: 'Spanish', CL: 'Spanish', PE: 'Spanish',
+  FR: 'French', BE: 'French/Dutch', CH: 'German/French/Italian', LU: 'French/German',
+  DE: 'German', AT: 'German',
+  IT: 'Italian',
+  PT: 'Portuguese', BR: 'Portuguese',
+  NL: 'Dutch',
+  RU: 'Russian',
+  CN: 'Chinese', TW: 'Chinese', HK: 'Chinese',
+  JP: 'Japanese',
+  KR: 'Korean',
+  IN: 'Hindi/English',
+  SA: 'Arabic', AE: 'Arabic', EG: 'Arabic', IQ: 'Arabic', JO: 'Arabic',
+  TR: 'Turkish',
+  PL: 'Polish',
+  SE: 'Swedish', NO: 'Norwegian', DK: 'Danish', FI: 'Finnish',
+  GR: 'Greek',
+  IL: 'Hebrew',
+  TH: 'Thai',
+  VN: 'Vietnamese',
+  ID: 'Indonesian',
+  MY: 'Malay',
+  PH: 'Filipino',
+  CZ: 'Czech',
+  HU: 'Hungarian',
+  RO: 'Romanian',
+  UA: 'Ukrainian',
+};
 
 export class IpLookupService {
   static async lookupIp(ipAddress: string): Promise<IpLocationResult> {
@@ -59,6 +91,8 @@ export class IpLookupService {
       }
 
       const row = result[0];
+      const countryCode = row.country_code || '';
+      const language = countryLanguageMap[countryCode] || 'Unknown';
 
       return {
         query: ipAddress,
@@ -77,6 +111,7 @@ export class IpLookupService {
         timezone: row.timezone || '',
         offset: row.timezone_offset || 0,
         currency: row.currency || '',
+        language: language,
         isp: row.isp || '',
         org: row.org || '',
         as: row.asn ? row.asn.toString() : '',

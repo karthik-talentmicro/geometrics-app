@@ -40,6 +40,7 @@ interface IpLocationData {
   timezone?: string;
   offset?: number;
   currency?: string;
+  language?: string;
   isp?: string;
   org?: string;
   as?: string;
@@ -225,6 +226,7 @@ export function IpSearch() {
                       }
                     />
                     <InfoItem label="Currency" value={data.currency} />
+                    <InfoItem label="Language" value={data.language} />
                   </div>
                 </div>
 

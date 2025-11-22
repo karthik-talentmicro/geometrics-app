@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,15 +19,62 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Menu, Settings, Globe } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export function Header() {
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  // Detect user's country on mount
+  useEffect(() => {
+    detectCountry();
+  }, []);
+
+  const detectCountry = async () => {
+    setIsDetecting(true);
+    try {
+      // Get user's IP
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+
+      // Lookup IP location
+      const locationResponse = await fetch(`/api/ip-lookup?ip=${ipData.ip}`);
+      const locationData = await locationResponse.json();
+
+      if (locationData.status === 'success' && locationData.country) {
+        setDetectedCountry(locationData.country);
+        setSelectedCountry(locationData.country);
+      }
+    } catch (error) {
+      console.error('Failed to detect country:', error);
+    } finally {
+      setIsDetecting(false);
+    }
+  };
+
+  const popularCountries = [
+    "United States", "United Kingdom", "Germany", "France", "Canada",
+    "Australia", "Japan", "India", "Brazil", "Spain"
+  ];
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold">Locale OS</span>
+          <span className="text-3xl font-bold tracking-wide bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            LocaleOS
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -122,6 +170,59 @@ export function Header() {
 
         {/* CTA Button - Desktop */}
         <div className="hidden md:flex items-center space-x-2">
+          {/* Country Settings Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Globe className="h-5 w-5" />
+                {selectedCountry && !isDetecting && (
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-background" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="flex items-center justify-between">
+                <span>Location Settings</span>
+                <Settings className="h-3.5 w-3.5" />
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {isDetecting ? (
+                <DropdownMenuItem disabled>
+                  Detecting location...
+                </DropdownMenuItem>
+              ) : detectedCountry ? (
+                <>
+                  <DropdownMenuItem className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      {detectedCountry}
+                    </span>
+                    <Badge variant="secondary" className="text-xs">Auto</Badge>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                    Popular Countries
+                  </DropdownMenuLabel>
+                  {popularCountries
+                    .filter(c => c !== detectedCountry)
+                    .slice(0, 5)
+                    .map((country) => (
+                      <DropdownMenuItem
+                        key={country}
+                        onClick={() => setSelectedCountry(country)}
+                      >
+                        {country}
+                      </DropdownMenuItem>
+                    ))}
+                </>
+              ) : (
+                <DropdownMenuItem onClick={detectCountry}>
+                  Detect my location
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button variant="outline">Sign In</Button>
           <Button>Get Started</Button>
         </div>

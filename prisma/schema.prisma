@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model IpLocation {
+  id            BigInt   @id @default(autoincrement())
+  ipStart       String   @map("ip_start") @db.Inet
+  ipEnd         String   @map("ip_end") @db.Inet
+  continent     String?  @db.VarChar(50)
+  continentCode String?  @map("continent_code") @db.VarChar(2)
+  country       String?  @db.VarChar(100)
+  countryCode   String?  @map("country_code") @db.VarChar(2)
+  region        String?  @db.VarChar(100)
+  regionName    String?  @map("region_name") @db.VarChar(100)
+  city          String?  @db.VarChar(100)
+  district      String?  @db.VarChar(100)
+  zip           String?  @db.VarChar(20)
+  lat           Decimal? @db.Decimal(10, 7)
+  lon           Decimal? @db.Decimal(10, 7)
+  timezone      String?  @db.VarChar(50)
+  utcOffset     Int?     @map("utc_offset")
+  currency      String?  @db.VarChar(3)
+  isp           String?  @db.VarChar(255)
+  org           String?  @db.VarChar(255)
+  asNumber      String?  @map("as_number") @db.VarChar(20)
+  asName        String?  @map("as_name") @db.VarChar(255)
+  mobile        Boolean  @default(false)
+  proxy         Boolean  @default(false)
+  hosting       Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([ipStart], map: "idx_ip_start")
+  @@index([countryCode], map: "idx_country_code")
+  @@index([city], map: "idx_city")
+  @@map("ip_locations")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ip_geolocation {
+  id              BigInt    @id @default(autoincrement())
+  ip_range        String    @db.Inet
+  ip_start_int    BigInt
+  ip_end_int      BigInt
+  ip_version      Int       @default(4) @db.SmallInt
+  country_code    String?   @db.VarChar(2)
+  country         String?   @db.VarChar(100)
+  region          String?   @db.VarChar(100)
+  region_name     String?   @db.VarChar(100)
+  city            String?   @db.VarChar(100)
+  district        String?   @db.VarChar(100)
+  zip             String?   @db.VarChar(20)
+  latitude        Decimal?  @db.Decimal(10, 7)
+  longitude       Decimal?  @db.Decimal(11, 7)
+  timezone        String?   @db.VarChar(50)
+  timezone_offset Int?
+  continent       String?   @db.VarChar(50)
+  continent_code  String?   @db.VarChar(2)
+  currency        String?   @db.VarChar(3)
+  asn             BigInt?
+  as_org          String?   @db.VarChar(255)
+  asname          String?   @db.VarChar(100)
+  isp             String?   @db.VarChar(255)
+  org             String?   @db.VarChar(255)
+  is_mobile       Boolean?  @default(false)
+  is_proxy        Boolean?  @default(false)
+  is_hosting      Boolean?  @default(false)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([asn], map: "idx_ip_geolocation_asn")
+  @@index([country_code, city], map: "idx_ip_geolocation_city")
+  @@index([country_code], map: "idx_ip_geolocation_country")
+  @@index([ip_range(ops: InetOps)], map: "idx_ip_geolocation_range", type: Gist)
+  @@index([ip_start_int, ip_end_int], map: "idx_ip_geolocation_start_end")
+  @@index([ip_version, ip_start_int, ip_end_int], map: "idx_ip_geolocation_version_range")
+}
+
+model ip_metadata {
+  key        String    @id @db.VarChar(50)
+  value      String?
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+}

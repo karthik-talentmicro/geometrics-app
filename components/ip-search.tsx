@@ -84,56 +84,40 @@ export function IpSearch() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-8">
       {/* Search Bar */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            IP Address Lookup
-          </CardTitle>
-          <CardDescription>
-            Enter any IP address to get detailed location and network information
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Enter IP address (e.g., 8.8.8.8)"
-              value={ipAddress}
-              onChange={(e) => setIpAddress(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="flex-1"
-            />
-            <Button onClick={handleSearch} disabled={loading}>
-              <Search className="h-4 w-4 mr-2" />
-              {loading ? "Searching..." : "Search"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex gap-3 max-w-2xl mx-auto">
+        <Input
+          type="text"
+          placeholder="Enter IP address (e.g., 8.8.8.8)"
+          value={ipAddress}
+          onChange={(e) => setIpAddress(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="flex-1 h-12 text-base"
+        />
+        <Button onClick={() => handleSearch()} disabled={loading} size="lg">
+          <Search className="h-4 w-4 mr-2" />
+          {loading ? "Searching..." : "Search"}
+        </Button>
+      </div>
 
       {/* Error Message */}
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="max-w-2xl mx-auto">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       {/* Loading State */}
       {loading && (
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Skeleton className="h-32 w-full rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton className="h-40 w-full rounded-lg" />
+          </div>
+        </div>
       )}
 
       {/* Results */}

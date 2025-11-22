@@ -72,6 +72,7 @@ model ip_geolocation {
   is_hosting      Boolean?  @default(false)
   created_at      DateTime? @default(now()) @db.Timestamp(6)
   updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  is_vpn          Boolean?  @default(false)
 
   @@index([asn], map: "idx_ip_geolocation_asn")
   @@index([country_code, city], map: "idx_ip_geolocation_city")
@@ -79,10 +80,135 @@ model ip_geolocation {
   @@index([ip_range(ops: InetOps)], map: "idx_ip_geolocation_range", type: Gist)
   @@index([ip_start_int, ip_end_int], map: "idx_ip_geolocation_start_end")
   @@index([ip_version, ip_start_int, ip_end_int], map: "idx_ip_geolocation_version_range")
+  @@index([ip_start_int, ip_end_int], map: "idx_ip_start_end")
 }
 
 model ip_metadata {
   key        String    @id @db.VarChar(50)
   value      String?
   updated_at DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model country_languages {
+  id                   Int       @id @default(autoincrement())
+  country_code         String    @unique @db.Char(2)
+  country_name         String    @db.VarChar(100)
+  primary_language     String    @db.VarChar(50)
+  language_code        String    @db.VarChar(10)
+  language_native_name String?   @db.VarChar(100)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  updated_at           DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([country_code], map: "idx_country_languages_code")
+}
+
+model datacenter_cidr_ranges {
+  id           Int       @id @default(autoincrement())
+  cidr         String    @db.Text
+  ip_start_int BigInt
+  ip_end_int   BigInt
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([ip_end_int], map: "idx_datacenter_cidr_end")
+  @@index([ip_start_int, ip_end_int], map: "idx_datacenter_cidr_ranges")
+  @@index([ip_start_int], map: "idx_datacenter_cidr_start")
+}
+
+model hosting_ips {
+  id            Int       @id @default(autoincrement())
+  ip_start_int  BigInt
+  ip_end_int    BigInt
+  provider_name String?
+  provider_url  String?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([ip_end_int], map: "idx_hosting_ips_end")
+  @@index([ip_start_int, ip_end_int], map: "idx_hosting_ips_range")
+  @@index([ip_start_int], map: "idx_hosting_ips_start")
+}
+
+model proxy_ips {
+  id         Int       @id @default(autoincrement())
+  ip_address String    @db.Inet
+  ip_int     BigInt
+  port       Int?
+  protocol   String?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+
+  @@unique([ip_int, port], map: "idx_proxy_ips_unique")
+  @@index([ip_address], map: "idx_proxy_ips_addr")
+  @@index([ip_int], map: "idx_proxy_ips_int")
+}
+
+model vpn_cidr_ranges {
+  id           Int       @id @default(autoincrement())
+  cidr         String    @db.Text
+  ip_start_int BigInt
+  ip_end_int   BigInt
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([ip_end_int], map: "idx_vpn_cidr_end")
+  @@index([ip_start_int, ip_end_int], map: "idx_vpn_cidr_ranges")
+  @@index([ip_start_int], map: "idx_vpn_cidr_start")
+}
+
+model vpn_ips {
+  id           Int       @id @default(autoincrement())
+  ip_address   String    @db.Inet
+  ip_int       BigInt    @unique(map: "idx_vpn_ips_unique")
+  vpn_provider String?
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([ip_address], map: "idx_vpn_ips_addr")
+  @@index([ip_int], map: "idx_vpn_ips_int")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  apps      App[]
+
+  @@map("users")
+}
+
+model App {
+  id         String   @id @default(cuid())
+  appId      String   @unique @map("app_id") // 256-bit app ID
+  identifier String   @unique // unique app identifier
+  name       String
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs       Log[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("apps")
+}
+
+model Log {
+  id                String   @id @default(cuid())
+  appId             String   @map("app_id")
+  app               App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  systemFingerprint String   @map("system_fingerprint") // To ensure one log per system
+  ipAddress         String?  @map("ip_address")
+  userAgent         String?  @map("user_agent") @db.Text
+  deviceInfo        Json?    @map("device_info") // Device details (OS, browser, screen, etc)
+  metadata          Json?    // Additional custom data
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([appId])
+  @@index([systemFingerprint])
+  @@index([createdAt])
+  @@unique([appId, systemFingerprint]) // Ensure one log per system per app
+  @@map("logs")
 }

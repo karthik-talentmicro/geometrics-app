@@ -1,8 +1,8 @@
 import type {
   LocaleOSConfig,
   TrackingEvent,
-  TrackingMetadata,
   TrackingResponse,
+  LocationInfo,
 } from './types';
 import { getPersistentFingerprint, generateFingerprint } from './utils/fingerprint';
 import { getDeviceInfo, isBrowser } from './utils/device';
@@ -11,16 +11,15 @@ class LocaleOSAnalytics {
   private config: Required<LocaleOSConfig>;
   private fingerprint: string | null = null;
   private initialized = false;
+  private locationCache: LocationInfo | null = null;
 
   constructor() {
     // Default configuration
     this.config = {
       appId: '',
       apiUrl: '',
+      enabled: true,
       debug: false,
-      autoTrack: true,
-      customFingerprint: '',
-      disableFingerprinting: false,
       retryAttempts: 3,
       retryDelay: 1000,
     };
@@ -46,69 +45,43 @@ class LocaleOSAnalytics {
       apiUrl: config.apiUrl || this.getDefaultApiUrl(),
     };
 
-    // Generate or get fingerprint
-    if (config.customFingerprint) {
-      this.fingerprint = config.customFingerprint;
-    } else if (config.disableFingerprinting) {
-      this.fingerprint = `random_${Math.random().toString(36).substring(7)}`;
-    } else {
-      this.fingerprint = getPersistentFingerprint();
-    }
+    // Always use internal fingerprinting
+    this.fingerprint = getPersistentFingerprint();
 
     this.initialized = true;
-    this.log('LocaleOS Analytics initialized', {
-      appId: this.config.appId,
-      fingerprint: this.fingerprint,
-    });
+    this.log('LocaleOS initialized');
 
-    // Auto-track page view if enabled
-    if (this.config.autoTrack) {
-      this.trackPageView();
+    // Automatically track visit when enabled
+    if (this.config.enabled) {
+      this.track();
     }
   }
 
   /**
    * Track a custom event
    */
-  public async track(event?: string | TrackingEvent, metadata?: TrackingMetadata): Promise<boolean> {
+  public async track(event?: string | TrackingEvent): Promise<boolean> {
     if (!this.initialized) {
       this.log('LocaleOS Analytics not initialized. Call init() first.');
       return false;
+    }
+
+    // Check if tracking is enabled
+    if (!this.config.enabled) {
+      this.log('Tracking is disabled');
+      return true; // Return true to not break existing code
     }
 
     let eventData: TrackingEvent = {};
 
     // Handle different parameter formats
     if (typeof event === 'string') {
-      eventData = { event, metadata };
+      eventData = { event };
     } else if (event) {
       eventData = event;
     }
 
-    return this.sendTrackingRequest(eventData.metadata);
-  }
-
-  /**
-   * Track a page view
-   */
-  public async trackPageView(metadata?: TrackingMetadata): Promise<boolean> {
-    const pageData = {
-      event: 'page_view',
-      url: window.location.href,
-      path: window.location.pathname,
-      referrer: document.referrer,
-      title: document.title,
-      ...metadata,
-    };
-
-    return this.track({ event: 'page_view', metadata: pageData });
-  }
-
-  /**
-   * Track a custom event with specific name
-   */
-  public async trackEvent(eventName: string, metadata?: TrackingMetadata): Promise<boolean> {
-    return this.track({ event: eventName, metadata });
+    return this.sendTrackingRequest();
   }
 
   /**
@@ -127,12 +100,58 @@ class LocaleOSAnalytics {
   }
 
   /**
+   * Get location information from IP address
+   * Includes country, city, timezone, and currency information
+   */
+  public async getLocationInfo(): Promise<LocationInfo | null> {
+    if (!isBrowser()) return null;
+
+    // Return cached location if available
+    if (this.locationCache) {
+      return this.locationCache;
+    }
+
+    try {
+      // Get user's IP from external service
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const userIp = ipData.ip;
+
+      // Lookup IP location from our API
+      const locationResponse = await fetch(
+        `${this.config.apiUrl}/api/ip-lookup?ip=${userIp}`
+      );
+      const locationData = await locationResponse.json();
+
+      if (locationData.status === 'success') {
+        this.locationCache = {
+          ip: userIp,
+          country: locationData.country,
+          countryCode: locationData.country_code,
+          region: locationData.region,
+          city: locationData.city,
+          postalCode: locationData.postal_code,
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          timezone: locationData.timezone,
+          currency: locationData.currency,
+          currencySymbol: locationData.currency_symbol,
+        };
+
+        return this.locationCache;
+      }
+
+      return null;
+    } catch (error) {
+      this.log('Error fetching location info:', error);
+      return null;
+    }
+  }
+
+  /**
    * Send tracking request to the API
    */
-  private async sendTrackingRequest(
-    metadata?: TrackingMetadata,
-    attempt = 1
-  ): Promise<boolean> {
+  private async sendTrackingRequest(attempt = 1): Promise<boolean> {
     try {
       const response = await fetch(`${this.config.apiUrl}/api/track`, {
         method: 'POST',
@@ -142,7 +161,6 @@ class LocaleOSAnalytics {
         body: JSON.stringify({
           appId: this.config.appId,
           fingerprint: this.fingerprint,
-          metadata,
         }),
       });
 
@@ -152,7 +170,7 @@ class LocaleOSAnalytics {
         throw new Error(data.error || 'Failed to track event');
       }
 
-      this.log('Event tracked successfully', data);
+      this.log('Event tracked');
       return true;
     } catch (error) {
       this.log('Error tracking event', error);
@@ -161,7 +179,7 @@ class LocaleOSAnalytics {
       if (attempt < this.config.retryAttempts) {
         this.log(`Retrying... Attempt ${attempt + 1}/${this.config.retryAttempts}`);
         await this.delay(this.config.retryDelay * attempt);
-        return this.sendTrackingRequest(metadata, attempt + 1);
+        return this.sendTrackingRequest(attempt + 1);
       }
 
       return false;
@@ -210,3 +228,4 @@ export * from './types';
 // Export utilities
 export { generateFingerprint, getPersistentFingerprint } from './utils/fingerprint';
 export { getDeviceInfo, isBrowser, isMobile, isTablet, isDesktop } from './utils/device';
+export type { LocationInfo } from './types';

@@ -181,15 +181,16 @@ model User {
 }
 
 model App {
-  id         String   @id @default(cuid())
-  appId      String   @unique @map("app_id") // 256-bit app ID
-  identifier String   @unique // unique app identifier
-  name       String
-  userId     String   @map("user_id")
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs       Log[]
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(cuid())
+  appId           String   @unique @map("app_id") // 256-bit app ID
+  identifier      String   @unique // unique app identifier
+  name            String
+  trackingEnabled Boolean  @default(true) @map("tracking_enabled") // Enable/disable tracking for this app
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs            Log[]
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
   @@map("apps")
@@ -200,10 +201,7 @@ model Log {
   appId             String   @map("app_id")
   app               App      @relation(fields: [appId], references: [id], onDelete: Cascade)
   systemFingerprint String   @map("system_fingerprint") // To ensure one log per system
-  ipAddress         String?  @map("ip_address")
-  userAgent         String?  @map("user_agent") @db.Text
-  deviceInfo        Json?    @map("device_info") // Device details (OS, browser, screen, etc)
-  metadata          Json?    // Additional custom data
+  data              Json     // Flexible JSON object containing all tracking data (ipAddress, userAgent, deviceInfo, etc)
   createdAt         DateTime @default(now()) @map("created_at")
 
   @@index([appId])

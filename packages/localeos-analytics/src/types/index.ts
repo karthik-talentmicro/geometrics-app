@@ -8,29 +8,20 @@ export interface LocaleOSConfig {
   appId: string;
 
   /**
-   * API endpoint URL (optional, defaults to production)
+   * API endpoint URL (optional, defaults to current origin)
    */
   apiUrl?: string;
+
+  /**
+   * Enable/disable tracking (defaults to true)
+   * When disabled, all tracking methods will return immediately without making API calls
+   */
+  enabled?: boolean;
 
   /**
    * Enable debug logging
    */
   debug?: boolean;
-
-  /**
-   * Automatically track page views
-   */
-  autoTrack?: boolean;
-
-  /**
-   * Custom fingerprint (if you want to provide your own)
-   */
-  customFingerprint?: string;
-
-  /**
-   * Disable fingerprinting and use a random ID
-   */
-  disableFingerprinting?: boolean;
 
   /**
    * Number of retry attempts for failed requests
@@ -44,13 +35,6 @@ export interface LocaleOSConfig {
 }
 
 /**
- * Metadata that can be sent with tracking events
- */
-export interface TrackingMetadata {
-  [key: string]: any;
-}
-
-/**
  * Event data for tracking
  */
 export interface TrackingEvent {
@@ -58,11 +42,6 @@ export interface TrackingEvent {
    * Event name (e.g., 'page_view', 'button_click')
    */
   event?: string;
-
-  /**
-   * Additional metadata
-   */
-  metadata?: TrackingMetadata;
 }
 
 /**
@@ -107,6 +86,66 @@ export interface DeviceInfo {
    * Hardware concurrency (CPU cores)
    */
   cores?: number;
+}
+
+/**
+ * Location information from IP address
+ */
+export interface LocationInfo {
+  /**
+   * IP address
+   */
+  ip: string;
+
+  /**
+   * Country name
+   */
+  country?: string;
+
+  /**
+   * Country code (ISO 3166-1 alpha-2)
+   */
+  countryCode?: string;
+
+  /**
+   * Region/State
+   */
+  region?: string;
+
+  /**
+   * City
+   */
+  city?: string;
+
+  /**
+   * Postal code
+   */
+  postalCode?: string;
+
+  /**
+   * Latitude
+   */
+  latitude?: number;
+
+  /**
+   * Longitude
+   */
+  longitude?: number;
+
+  /**
+   * Timezone (e.g., "America/New_York")
+   */
+  timezone?: string;
+
+  /**
+   * Currency code (e.g., "USD")
+   */
+  currency?: string;
+
+  /**
+   * Currency symbol (e.g., "$")
+   */
+  currencySymbol?: string;
 }
 
 /**

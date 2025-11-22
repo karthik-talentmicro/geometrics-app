@@ -14,6 +14,7 @@
     "test:ip-lookup": "ts-node --project tsconfig.scripts.json scripts/test-ip-lookup.ts"
   },
   "dependencies": {
+    "@localeos/ip-info": "file:packages/localeos-analytics",
     "@prisma/client": "^6.19.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",

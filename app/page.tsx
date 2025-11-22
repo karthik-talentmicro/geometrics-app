@@ -1,6 +1,7 @@
 import { IpSearch } from "@/components/ip-search";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { MockAnalyticsDashboard } from "@/components/mock-analytics-dashboard";
+import { LocaleOSDemo } from "@/components/localeos-demo";
 
 export default function Home() {
   return (
@@ -29,6 +30,25 @@ export default function Home() {
 
       {/* Mock Analytics Dashboard */}
       <MockAnalyticsDashboard />
+
+      {/* LocaleOS SDK Demo */}
+      <section className="w-full py-16 bg-muted/50">
+        <div className="container px-4 md:px-6 max-w-4xl">
+          <div className="flex flex-col items-center space-y-6 text-center mb-8">
+            <div className="space-y-3">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                Try the LocaleOS SDK
+              </h2>
+              <p className="mx-auto max-w-[600px] text-muted-foreground">
+                Test our analytics SDK in action. Track events, get device fingerprints, and see detailed device information.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <LocaleOSDemo />
+          </div>
+        </div>
+      </section>
 
       {/* Stats Section */}
       <section className="w-full py-16 bg-background">

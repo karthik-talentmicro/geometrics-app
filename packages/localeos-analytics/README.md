@@ -44,31 +44,14 @@ pnpm add @localeos/ip-info
 ```javascript
 import LocaleOS from '@localeos/ip-info';
 
-// Initialize with your App ID
+// Initialize with your App ID - tracking happens automatically!
 LocaleOS.init({
   appId: 'your-256-bit-app-id',
   debug: true, // Enable debug mode during development
 });
 ```
 
-### 3. Track Events
-
-The SDK automatically tracks page views by default. You can also track custom events:
-
-```javascript
-// Track a custom event
-LocaleOS.track('button_click', {
-  buttonName: 'signup',
-  page: '/landing',
-});
-
-// Or use trackEvent method
-LocaleOS.trackEvent('purchase', {
-  productId: '123',
-  price: 99.99,
-  currency: 'USD',
-});
-```
+**That's it!** The SDK automatically tracks when your app is visited. Each unique system is logged once and updated on subsequent visits.
 
 ## Configuration Options
 
@@ -80,17 +63,12 @@ LocaleOS.init({
   // Optional: Custom API endpoint (defaults to current origin)
   apiUrl: 'https://your-custom-domain.com',
 
+  // Optional: Enable/disable tracking (defaults to true)
+  // When disabled, all tracking methods return immediately without making API calls
+  enabled: true,
+
   // Optional: Enable debug logging
   debug: false,
-
-  // Optional: Automatically track page views
-  autoTrack: true,
-
-  // Optional: Provide your own fingerprint
-  customFingerprint: 'custom-id',
-
-  // Optional: Disable fingerprinting and use random IDs
-  disableFingerprinting: false,
 
   // Optional: Number of retry attempts for failed requests
   retryAttempts: 3,
@@ -104,58 +82,32 @@ LocaleOS.init({
 
 ### `init(config: LocaleOSConfig): void`
 
-Initialize the SDK with your configuration.
+Initialize the SDK with your configuration. **Automatically tracks the visit when called.**
 
 ```javascript
 LocaleOS.init({
   appId: 'your-app-id',
   debug: true,
 });
+// Visit is automatically logged!
 ```
 
-### `track(event?: string | TrackingEvent, metadata?: object): Promise<boolean>`
+### `track(event?: string | TrackingEvent): Promise<boolean>` _(Optional)_
 
-Track a custom event with optional metadata.
+Manually track an additional event if needed. No personal data or metadata is collected - only system fingerprint and device info.
 
 ```javascript
 // Simple event
 await LocaleOS.track('user_signup');
 
-// Event with metadata
-await LocaleOS.track('purchase', {
-  productId: '123',
-  price: 99.99,
-});
+// Named event
+await LocaleOS.track('purchase');
 
 // Object syntax
-await LocaleOS.track({
-  event: 'page_view',
-  metadata: {
-    page: '/about',
-  },
-});
+await LocaleOS.track({ event: 'button_click' });
 ```
 
-### `trackPageView(metadata?: object): Promise<boolean>`
-
-Track a page view with automatic URL detection.
-
-```javascript
-await LocaleOS.trackPageView({
-  customField: 'value',
-});
-```
-
-### `trackEvent(eventName: string, metadata?: object): Promise<boolean>`
-
-Track a named event.
-
-```javascript
-await LocaleOS.trackEvent('video_play', {
-  videoId: 'abc123',
-  duration: 120,
-});
-```
+**Note:** Most apps won't need this since visits are tracked automatically on initialization.
 
 ### `getFingerprint(): string | null`
 
@@ -184,32 +136,47 @@ console.log(deviceInfo);
 // }
 ```
 
+### `getLocationInfo(): Promise<LocationInfo | null>`
+
+Get location information from IP address including country, city, timezone, and currency.
+
+```javascript
+const locationInfo = await LocaleOS.getLocationInfo();
+console.log(locationInfo);
+// {
+//   ip: "8.8.8.8",
+//   country: "United States",
+//   countryCode: "US",
+//   region: "California",
+//   city: "Mountain View",
+//   postalCode: "94035",
+//   latitude: 37.386,
+//   longitude: -122.0838,
+//   timezone: "America/Los_Angeles",
+//   currency: "USD",
+//   currencySymbol: "$"
+// }
+```
+
+**Note:** This method is cached after the first call for performance.
+
 ## Advanced Usage
 
-### Custom Fingerprint
+### Disable Tracking
 
-If you have your own user identification system:
-
-```javascript
-LocaleOS.init({
-  appId: 'your-app-id',
-  customFingerprint: userId, // Use your own ID
-});
-```
-
-### Disable Auto-Tracking
-
-If you want to manually control when events are tracked:
+You can completely disable tracking (useful for development, testing, or user preferences):
 
 ```javascript
 LocaleOS.init({
   appId: 'your-app-id',
-  autoTrack: false, // Disable automatic page view tracking
+  enabled: false, // Disable all tracking
 });
 
-// Manually track when needed
-LocaleOS.trackPageView();
+// All tracking methods will return immediately without making API calls
+LocaleOS.track('event'); // Does nothing when disabled
 ```
+
+**Note:** Tracking can also be disabled server-side in your LocaleOS dashboard. When disabled server-side, the SDK will still make API calls but they will be ignored by the server.
 
 ### Error Handling
 
@@ -236,15 +203,10 @@ function App() {
       appId: process.env.REACT_APP_LOCALEOS_ID,
       debug: process.env.NODE_ENV === 'development',
     });
+    // Visit is automatically tracked!
   }, []);
 
-  const handleButtonClick = async () => {
-    await LocaleOS.track('button_click', {
-      button: 'cta',
-    });
-  };
-
-  return <button onClick={handleButtonClick}>Click Me</button>;
+  return <div>Your App</div>;
 }
 ```
 
@@ -253,27 +215,15 @@ function App() {
 ```jsx
 // pages/_app.js
 import { useEffect } from 'react';
-import { useRouter } from 'next/router';
 import LocaleOS from '@localeos/ip-info';
 
 function MyApp({ Component, pageProps }) {
-  const router = useRouter();
-
   useEffect(() => {
     LocaleOS.init({
       appId: process.env.NEXT_PUBLIC_LOCALEOS_ID,
-      autoTrack: false, // Handle page views manually
     });
+    // Visit is automatically tracked!
   }, []);
-
-  useEffect(() => {
-    const handleRouteChange = () => {
-      LocaleOS.trackPageView();
-    };
-
-    router.events.on('routeChangeComplete', handleRouteChange);
-    return () => router.events.off('routeChangeComplete', handleRouteChange);
-  }, [router.events]);
 
   return <Component {...pageProps} />;
 }

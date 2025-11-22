@@ -80,7 +80,7 @@ function parseUserAgent(userAgent: string | null) {
 // POST /api/track - Log analytics event
 export async function POST(req: Request) {
   try {
-    const { appId, fingerprint, metadata } = await req.json();
+    const { appId, fingerprint } = await req.json();
 
     if (!appId) {
       return NextResponse.json(
@@ -108,10 +108,26 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check if tracking is enabled for this app
+    if (!app.trackingEnabled) {
+      return NextResponse.json({
+        success: true,
+        message: "Tracking is disabled for this app",
+      });
+    }
+
     // Extract IP and device info
     const ipAddress = getIpAddress(req);
     const userAgent = req.headers.get("user-agent");
     const deviceInfo = parseUserAgent(userAgent);
+
+    // Create flexible data object
+    const trackingData = {
+      ipAddress,
+      userAgent,
+      deviceInfo,
+      timestamp: new Date().toISOString(),
+    };
 
     // Use upsert to ensure only one log per system per app
     // If a log already exists with this fingerprint, update it
@@ -124,19 +140,13 @@ export async function POST(req: Request) {
         },
       },
       update: {
-        // Update the timestamp and metadata on subsequent visits
-        ipAddress,
-        userAgent,
-        deviceInfo,
-        metadata,
+        // Update with latest tracking data
+        data: trackingData,
       },
       create: {
         appId: app.id,
         systemFingerprint: fingerprint,
-        ipAddress,
-        userAgent,
-        deviceInfo,
-        metadata,
+        data: trackingData,
       },
     });
 

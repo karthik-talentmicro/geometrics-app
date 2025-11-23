@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { IpLookupService } from '@/lib/services/ip-lookup-prisma';
+import { ExternalIpLookupService } from '@/lib/services/ip-lookup-external';
 
 // Helper function to parse user agent
 function parseUserAgent(userAgent: string) {
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await IpLookupService.lookupIp(ip);
+    const result = await ExternalIpLookupService.lookupIp(ip);
 
     if (result.status === 'fail') {
       return NextResponse.json(result, { status: 404 });
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await IpLookupService.lookupIp(ip);
+    const result = await ExternalIpLookupService.lookupIp(ip);
 
     if (result.status === 'fail') {
       return NextResponse.json(result, { status: 404 });

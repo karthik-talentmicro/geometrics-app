@@ -254,6 +254,12 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center cursor-pointer">
+                      <User className="h-4 w-4 mr-2" />
+                      Profile Settings
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign Out
@@ -326,6 +332,12 @@ export function Header() {
                       <p className="font-medium">{session.user?.name || "User"}</p>
                       <p className="text-xs text-muted-foreground">{session.user?.email}</p>
                     </div>
+                    <Link href="/profile">
+                      <Button variant="outline" className="w-full">
+                        <User className="h-4 w-4 mr-2" />
+                        Profile Settings
+                      </Button>
+                    </Link>
                     <Button
                       variant="outline"
                       className="w-full"
